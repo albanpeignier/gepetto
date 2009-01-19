@@ -6,25 +6,27 @@
 
 A helper suite for Puppet projects to create, manage and help daily development
 
-More information about Puppet : http://reductivelabs.com/trac/puppet/
+More information about Puppet: http://reductivelabs.com/trac/puppet/
 
 == FEATURES/PROBLEMS:
 
-Creates base project :
+Creates base project:
 
 * create Puppet File Hierarchy
 * create default manifests files
 
-Provides helper tools :
+Provides helper tools:
 
 * script/server: to start a local puppetmasterd
 * script/puppetca: to manage local ssl directory
 
-* script/generate : generate puppet code (for module, ...)
+* script/generate: generate puppet code (for module, ...)
 
-* rake tasks : clean temporary or log files, ...
+* rake tasks: clean temporary or log files, ...
 
 == SYNOPSIS:
+
+Creates a new puppet project
 
   gepetto /path/to/new/puppet/project
 
@@ -43,6 +45,21 @@ Provides helper tools :
       exists    script
       create    script/generate
       create    script/destroy
+
+Starts a puppetmasterd with project files:
+
+  ./script/server &
+
+   notice: Starting Puppet server version 0.24.5
+
+List waiting client certificates:
+
+  ./script/puppetca --list
+  sandbox.localdomain
+
+Sign a client certificate:
+
+  ./script/puppetca --sign sandbox.localdomain
 
 == REQUIREMENTS:
 
