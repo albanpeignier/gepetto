@@ -1,0 +1,18 @@
+Description:
+    Create an empty module organisation as specified by
+    http://reductivelabs.com/trac/puppet/wiki/ModuleOrganisation
+
+    This generates a module directories and files into modules/<modulename>.
+
+Example:
+    ./script/generate module passenger
+
+    creates directories :
+      modules/passenger/templates
+      modules/passenger/files
+      modules/passenger/depends
+
+    creates files :
+      modules/passenger/README
+      modules/passenger/manifests/init.pp
+      modules/passenger/manifests/defaults.pp
