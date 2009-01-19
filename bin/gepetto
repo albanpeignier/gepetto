@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'rubigen'
+
+if %w(-v --version).include? ARGV.first
+  require 'gepetto/version'
+  puts "#{File.basename($0)} #{Gepetto::VERSION}"
+  exit(0)
+end
+
+require 'rubigen/scripts/generate'
+RubiGen::Base.use_application_sources!
+
+RubiGen::Base.prepend_sources(
+  RubiGen::PathSource.new(:app, File.join(File.dirname(__FILE__), "..", "app_generators"))
+)
+RubiGen::Scripts::Generate.new.run(ARGV, :generator => 'gepetto')
