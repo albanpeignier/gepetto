@@ -26,7 +26,7 @@ Provides helper tools:
 
 == SYNOPSIS:
 
-Creates a new puppet project
+Create a new puppet project
 
   gepetto /path/to/new/puppet/project
 
@@ -46,7 +46,7 @@ Creates a new puppet project
       create    script/generate
       create    script/destroy
 
-Starts a puppetmasterd with project files:
+Start a puppetmasterd with project files:
 
   ./script/server &
 
@@ -60,6 +60,17 @@ List waiting client certificates:
 Sign a client certificate:
 
   ./script/puppetca --sign sandbox.localdomain
+
+Create a new Puppet module
+
+  ./script/generate module private
+
+      create  
+      create  manifests
+      create  files
+      create  templates
+      create  README
+      create  manifests/init.pp
 
 == REQUIREMENTS:
 
