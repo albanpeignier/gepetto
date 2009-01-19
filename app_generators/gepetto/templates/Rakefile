@@ -1,1 +1,4 @@
+%w[rubygems rake rake/clean fileutils].each { |f| require f }
+
+require 'gepetto/tasks' # load /tasks/*.rake
 Dir['tasks/**/*.rake'].each { |t| load t }

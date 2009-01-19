@@ -10,12 +10,13 @@ app_generators/gepetto/templates/manifests/site.pp
 app_generators/gepetto/templates/manifests/templates.pp
 app_generators/gepetto/templates/script/puppetca
 app_generators/gepetto/templates/script/server
-app_generators/gepetto/templates/tasks/log.rake
-app_generators/gepetto/templates/tasks/tmp.rake
 bin/gepetto
 gepetto.gemspec
 lib/gepetto.rb
+lib/gepetto/tasks.rb
 puppet_generators/module/module_generator.rb
 puppet_generators/module/templates/README
 script/destroy
 script/generate
+tasks/log.rake
+tasks/tmp.rake

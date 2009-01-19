@@ -23,8 +23,6 @@ class GepettoGenerator < RubiGen::Base
 
       m.template_copy_each %w( server puppetca ), 'script', script_options
 
-      m.template_copy_each %w( log.rake tmp.rake ), 'tasks'
-
       m.dependency "install_rubigen_scripts", [destination_root, "puppet"]
     end
   end
