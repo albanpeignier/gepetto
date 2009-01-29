@@ -5,14 +5,19 @@ Rakefile
 app_generators/gepetto/USAGE
 app_generators/gepetto/gepetto_generator.rb
 app_generators/gepetto/templates/Rakefile
+app_generators/gepetto/templates/config/fileserver.conf
+app_generators/gepetto/templates/config/puppet.conf
 app_generators/gepetto/templates/manifests/nodes.pp
 app_generators/gepetto/templates/manifests/site.pp
 app_generators/gepetto/templates/manifests/templates.pp
+app_generators/gepetto/templates/script/module
 app_generators/gepetto/templates/script/puppetca
+app_generators/gepetto/templates/script/puppetrun
 app_generators/gepetto/templates/script/server
 bin/gepetto
 gepetto.gemspec
 lib/gepetto.rb
+lib/gepetto/module.rb
 lib/gepetto/tasks.rb
 puppet_generators/module/USAGE
 puppet_generators/module/module_generator.rb
@@ -21,4 +26,5 @@ puppet_generators/module/templates/manifests/init.pp
 script/destroy
 script/generate
 tasks/log.rake
+tasks/puppet.rake
 tasks/tmp.rake
