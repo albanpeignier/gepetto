@@ -32,15 +32,21 @@ Create a new puppet project
 
       create  
       create  script
+      create  config
       create  manifests
       create  files
       create  templates
+      create  tasks
       create  Rakefile
       create  manifests/site.pp
       create  manifests/templates.pp
       create  manifests/nodes.pp
+      create  config/puppet.conf
+      create  config/fileserver.conf
       create  script/server
       create  script/puppetca
+      create  script/puppetrun
+      create  script/module
   dependency  install_rubigen_scripts
       exists    script
       create    script/generate
@@ -55,11 +61,28 @@ Start a puppetmasterd with project files:
 List waiting client certificates:
 
   ./script/puppetca --list
-  sandbox.localdomain
+  sandbox
 
 Sign a client certificate:
 
-  ./script/puppetca --sign sandbox.localdomain
+  ./script/puppetca --sign sandbox
+
+Request a puppet run:
+
+  ./script/puppetrun --host sandbox
+
+Install an external module:
+
+  ./script/module install git://git.black.co.at/module-common  
+
+  install module common in modules/common
+ 
+  Initialized empty Git repository in modules/common/.git/
+  remote: Counting objects: 322, done.
+  remote: Compressing objects: 100% (217/217), done.
+  remote: Total 322 (delta 110), reused 210 (delta 70)
+  Receiving objects: 100% (322/322), 37.75 KiB, done.
+  Resolving deltas: 100% (110/110), done.
 
 Create a new Puppet module
 

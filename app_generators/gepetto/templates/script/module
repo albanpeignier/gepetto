@@ -1,0 +1,62 @@
+#!/bin/bash -e
+
+# TODO just a POC, make a real implementation
+
+function usage() {
+    cat - <<EOF
+Usage: module [OPTIONS] command
+Puppet module manager.
+GENERAL OPTIONS
+  -h, --help                       Show this help message.
+COMMANDS
+  install    Install module from an URL.
+EXAMPLES
+  Install a module from a git URL:
+    module install git://github.com/lak/puppet-puppet.git
+  Install a module from a git URL and a specified name:
+    module install git://github.com/lak/puppet-puppet.git lak-puppet
+EOF
+    exit 0
+}
+
+command=$1
+[  -z "$command" ] && usage
+
+shift
+
+modules_dir=modules
+[ -d $modules_dir ] || mkdir $modules_dir
+cd $modules_dir
+
+case $command in
+    install)
+        module_url=$1
+        [  -z "$module_url" ] && usage
+            
+        shift
+
+        if [ $# -gt 0 ]; then
+            module_name=$1
+            shift
+        else
+            module_name=`echo $module_url | sed 's@.*/\(.*\)$@\1@'`
+            # remove .git suffix
+            module_name=`echo $module_name | sed 's/\.git$//'`
+            # remove puppet- or module- prefix
+            module_name=`echo $module_name | sed -e 's/^puppet-//' -e 's/^module-//'`
+        fi
+            
+        if [ -d $module_name ]; then
+            echo "module $module_name already installed"
+            exit 1
+        fi
+
+        echo "install module $module_name in $modules_dir/$module_name"
+        
+        git clone $module_url $module_name
+        rm -rf $module_name/.git
+        ;;
+    *)
+        usage
+        ;;
+esac

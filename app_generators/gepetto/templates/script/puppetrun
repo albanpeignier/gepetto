@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/sbin/puppetrun --ssldir=$PWD/tmp/ssl --confdir=$PWD/config --certname=puppet $*
