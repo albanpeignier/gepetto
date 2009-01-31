@@ -16,7 +16,7 @@ class GepettoGenerator < RubiGen::Base
       # Root directory and all subdirectories.
       m.directory ''
 
-      %w{script config manifests files templates tasks}.each { |path| m.directory path }
+      %w{script config manifests files templates log tasks}.each { |path| m.directory path }
 
       m.template_copy_each %w( Rakefile )
 

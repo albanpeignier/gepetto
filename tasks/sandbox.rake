@@ -143,7 +143,7 @@ EOF
       end
 
       desc "Start sandbox"
-      task :start => 'create:tap_device' do
+      task :start => ['create:tap_device', 'tmp:create'] do
         start
       end
 
@@ -220,7 +220,7 @@ EOF
 
     if options[:daemonize]
       options = {
-        :pidfile => "tmp/run/#{name}.pid", :serial => "file:log/#{name}.log"        
+        :pidfile => File.expand_path("tmp/run/#{name}.pid"), :serial => "file:" + File.expand_path("log/#{name}.log")
       }.update(options)
     end
 
