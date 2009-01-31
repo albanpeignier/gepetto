@@ -8,7 +8,7 @@ A helper suite for Puppet projects to create, manage and help daily development
 
 More information about Puppet: http://reductivelabs.com/trac/puppet/
 
-== FEATURES/PROBLEMS:
+== FEATURES:
 
 Creates base project:
 
@@ -17,12 +17,18 @@ Creates base project:
 
 Provides helper tools:
 
-* script/server: to start a local puppetmasterd
+* script/puppetmasterd: to start a local puppetmasterd
 * script/puppetca: to manage local ssl directory
+* script/puppetrun: request a puppet run
+* script/module: to install external module
 
 * script/generate: generate puppet code (for module, ...)
 
-* rake tasks: clean temporary or log files, ...
+Provides rake tasks:
+
+* sandbox tasks: to create, start and control sandbox for development
+* puppet tasks: to check syntax
+* clean temporary or log files
 
 == SYNOPSIS:
 
@@ -43,7 +49,7 @@ Create a new puppet project
       create  manifests/nodes.pp
       create  config/puppet.conf
       create  config/fileserver.conf
-      create  script/server
+      create  script/puppetmasterd
       create  script/puppetca
       create  script/puppetrun
       create  script/module
@@ -54,22 +60,30 @@ Create a new puppet project
 
 Start a puppetmasterd with project files:
 
-  ./script/server &
+  ./script/puppetmasterd &
 
    notice: Starting Puppet server version 0.24.5
+
+Create and start a sandbox:
+
+  rake sandbox:setup sandbox:create sandbox:start
+
+Follow sandbox console/syslog:
+
+  tail -f log/sandbox.log
 
 List waiting client certificates:
 
   ./script/puppetca --list
   sandbox
 
-Sign a client certificate:
+Sign the sandbox certificate:
 
-  ./script/puppetca --sign sandbox
+  rake sandbox:puppet:sign
 
-Request a puppet run:
+Request a puppet run in sandbox:
 
-  ./script/puppetrun --host sandbox
+  rake sandbox:puppet:run
 
 Install an external module:
 
@@ -95,6 +109,69 @@ Create a new Puppet module
       create  README
       create  manifests/init.pp
 
+== SANDBOX
+
+For the moment, the sandbox tasks use qemu to create and run a virtual machine
+with a ready puppetd.
+
+Define a sandbox in your rakefile:
+
+  Sandbox.new do |s|
+    s.bootstraper = DebianBoostraper.new do |d|
+      d.version = 'lenny'
+      d.mirror = 'http://ftp.fr.debian.org/debian'
+    end
+
+    s.disk_size = '1G'
+    s.memory_size = '128M'
+  end
+
+Setup your host to create and start sandbox:
+
+  rake sandbox:setup
+
+It installs qemu, kqemu module and uml-utilities
+
+Create a fresh image for sandbox:
+
+  rake sandbox:create
+
+By default, it will create a disk of 512M with a debian lenny.
+
+Start a qemu instance with the sandbox image:
+
+  rake sandbox:start
+
+Follow the console (and syslog) output of the sandbox:
+
+  tail -f log/sandbox.log
+ 
+  [...]
+  Starting puppet configuration management tool
+
+  Debian GNU/Linux 5.0 sandbox ttyS0
+  sandbox login:
+
+  Jan 31 14:22:30 sandbox puppetd[1430]: Reopening log files.
+  Jan 31 14:22:32 sandbox puppetd[1430]: Could not request certificate
+
+
+Sign the new sandbox certificat:
+            
+  rake sandbox:puppet:sign
+
+Request a puppet run in the sandbox:
+
+  rake sandbox:puppet:run
+
+Stop the sandbox vm:
+
+  rake sandbox:stop
+
+Destroy sandbox files:
+
+  rake sandbox:destroy
+
 == REQUIREMENTS:
 
 * rubigen: http://rubigen.rubyforge.org/
@@ -102,6 +179,11 @@ Create a new Puppet module
 == INSTALL:
 
 * sudo gem install gepetto
+
+or to use the development release :
+
+* gem sources -a http://gems.github.com
+* sudo gem install albanpeignier-gepetto
 
 == LICENSE:
 
