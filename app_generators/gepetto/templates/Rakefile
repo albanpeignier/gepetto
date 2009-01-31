@@ -2,3 +2,23 @@
 
 require 'gepetto/tasks' # load /tasks/*.rake
 Dir['tasks/**/*.rake'].each { |t| load t }
+
+# Change the sandbox storage directory
+# Sandbox.images_directory = '/disks/sandbox'
+
+Sandbox.new do |s|
+  s.bootstraper = DebianBoostraper.new do |d|
+    # Specify the wanted debian distribution
+    # d.version = 'lenny'
+
+    # Use a local debian mirror
+    # d.mirror = 'http://ftp.fr.debian.org/debian'
+
+    # Use a local apt-proxy
+    # d.mirror = 'http://localhost:9999/debian'
+  end
+
+  # s.disk_size = '1G'
+  # s.memory_size = '128M'
+end
+
