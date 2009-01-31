@@ -9,6 +9,8 @@ $hoe = Hoe.new('gepetto', Gepetto::VERSION) do |p|
   p.rubyforge_name       = p.name # TODO this is default value
   p.extra_deps         = [
      ['rubigen',">= #{RubiGen::VERSION}"],
+     ['echoe',">= 3.0.2"],
+     ['cucumber',">= 0.1.8"],
   ]
   p.extra_dev_deps = [
     ['newgem', ">= #{::Newgem::VERSION}"]
