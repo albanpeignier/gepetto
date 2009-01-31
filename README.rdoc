@@ -178,12 +178,12 @@ Destroy sandbox files:
 
 == INSTALL:
 
-* sudo gem install gepetto
+  sudo gem install gepetto
 
-or to use the development release :
+or to use the development release:
 
-* gem sources -a http://gems.github.com
-* sudo gem install albanpeignier-gepetto
+  gem sources -a http://gems.github.com
+  sudo gem install albanpeignier-gepetto
 
 == LICENSE:
 
