@@ -12,8 +12,8 @@ app_generators/gepetto/templates/manifests/site.pp
 app_generators/gepetto/templates/manifests/templates.pp
 app_generators/gepetto/templates/script/module
 app_generators/gepetto/templates/script/puppetca
+app_generators/gepetto/templates/script/puppetmasterd
 app_generators/gepetto/templates/script/puppetrun
-app_generators/gepetto/templates/script/server
 bin/gepetto
 gepetto.gemspec
 lib/gepetto.rb
@@ -27,4 +27,7 @@ script/destroy
 script/generate
 tasks/log.rake
 tasks/puppet.rake
+tasks/sandbox.pp
+tasks/sandbox.rake
 tasks/tmp.rake
+tasks/utils.rake
