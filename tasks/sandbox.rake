@@ -48,7 +48,10 @@ class Sandbox < Rake::TaskLib
       task :setup => 'tmp:create' do
         # experimental qemu required to work with kqemu
         sudo "apt-get install -t experimental qemu"
+
+        sudo "apt-get install module-assistant"
         sudo "module-assistant a-i kqemu"
+
         sudo "apt-get install uml-utilities"
 
         puts <<EOF 
@@ -172,7 +175,8 @@ EOF
 
       task :clean => 'puppet:clean' do
         # clean known_hosts
-        sh "sed -i '/#{hostname},#{ip_address}/ d' ~/.ssh/known_hosts"
+        known_hosts_file="#{ENV['HOME']}/.ssh/known_hosts"
+        sh "sed -i '/#{hostname},#{ip_address}/ d' #{known_hosts_file}" if File.exists?(known_hosts_file)
       end
 
       task :status do
