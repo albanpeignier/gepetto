@@ -30,6 +30,11 @@ cd $modules_dir
 
 case $command in
     install)
+        if [ ! -x "/usr/bin/git" ]; then
+	   echo "You must install git to retrieve modules managed with it (apt-get install git-core)"
+	   exit 1
+        fi
+
         module_url=$1
         [  -z "$module_url" ] && usage
             
