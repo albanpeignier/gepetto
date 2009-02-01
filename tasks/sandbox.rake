@@ -14,7 +14,9 @@ class Sandbox < Rake::TaskLib
     @@images_directory = directory
   end
 
-  @@puppet_file = File.dirname(__FILE__) + '/sandbox.pp'
+  def puppet_file(name)
+    File.dirname(__FILE__) + "/#{name}.pp"
+  end
 
   attr_reader :name
   attr_accessor :bootstraper, :ip_address, :host_ip_address, :tap_device
@@ -46,25 +48,7 @@ class Sandbox < Rake::TaskLib
 
       desc "Setup local machine to host sandbox"
       task :setup => 'tmp:create' do
-        # experimental qemu required to work with kqemu
-        sudo "apt-get install -t experimental qemu"
-
-        sudo "apt-get install module-assistant"
-        sudo "module-assistant a-i kqemu"
-
-        sudo "apt-get install uml-utilities"
-
-        puts <<EOF 
-
-You need to route network traffic between your sandbox and your local network. 
-
-For example in your /etc/qemu-ifup:
-
-/sbin/ifconfig $1 #{host_ip_address}
-iptables -t nat -A POSTROUTING -s #{host_ip_address}/24 -o eth0 -j MASQUERADE
-sysctl -w net.ipv4.ip_forward=1
-
-EOF
+        sudo "puppet #{puppet_file(:host)}"
       end
 
       # Mix between these ways :
@@ -84,7 +68,7 @@ EOF
             sudo "losetup -o #{fs_offset} /dev/loop0 #{disk_image}"
             
             # because '/sbin/sfdisk -s /dev/loop0' returns a wrong value :
-            extract_fs_block_size = "/sbin/sfdisk -l #{disk_image} 2> /dev/null | awk '/img1/ { print gensub(\"+\", \"\", \"\", $5) }'"
+            extract_fs_block_size = "/sbin/sfdisk -l #{disk_image} 2> /dev/null | awk '/img1/ { gsub(\"+\", \"\", $5); print $5 }'"
             
             sudo "/sbin/mke2fs -jqF /dev/loop0 `#{extract_fs_block_size}`"
           ensure
@@ -110,7 +94,7 @@ EOF
           Tempfile.open('sandbox_puppet_file') do |sandbox_puppet_file|
             sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"            
             sandbox_puppet_file.puts "$sandbox_ip='#{ip_address}'"            
-            sandbox_puppet_file.puts IO.read(@@puppet_file)
+            sandbox_puppet_file.puts IO.read(puppet_file(:sandbox))
 
             sandbox_puppet_file.close
 
