@@ -25,6 +25,7 @@ puppet_generators/module/templates/README
 puppet_generators/module/templates/manifests/init.pp
 script/destroy
 script/generate
+tasks/host.pp
 tasks/log.rake
 tasks/puppet.rake
 tasks/sandbox.pp
