@@ -8,14 +8,28 @@ package { qemu:
 
 # compile kqemu module 
 
-package { module-assistant: 
+package { [module-assistant, kqemu-common]: 
   ensure => installed
+}
+
+case $lsbdistdescription {
+  "Ubuntu 8.10": { # fix for ubuntu
+    notice("Use debian kqemu 1.4.0 (kqemu-source 1.3.0 is broken on intreprid):")
+    $debian_kqemu_url="http://ftp.debian.org/debian/pool/main/k/kqemu/kqemu-source_1.4.0~pre1-1_all.deb"
+    exec { "backport-kqemu":
+      command => "wget -O /tmp/kqemu-source.deb $debian_kqemu_url  && dpkg -i /tmp/kqemu-source.deb",
+      unless => "dpkg -l kqemu-source | grep 1.4.0",
+      before => Exec["modass-kqemu"],
+      require => [Package[debhelper], Package[dpatch]]
+    }
+    package { [debhelper, dpatch]: ensure => installed }
+  }
 }
 
 exec { "modass-kqemu":
   command => "module-assistant a-i kqemu",
-  unless => 'dpkg -l "kqemu-modules-`uname -r`"',
-  require => Package[module-assistant]
+  unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
+  require => [Package[module-assistant], Package[kqemu-common]]
 }
 
 exec { "add kqemu in /etc/modules":
