@@ -68,7 +68,7 @@ class Sandbox < Rake::TaskLib
             sudo "losetup -o #{fs_offset} /dev/loop0 #{disk_image}"
             
             # because '/sbin/sfdisk -s /dev/loop0' returns a wrong value :
-            extract_fs_block_size = "/sbin/sfdisk -l #{disk_image} 2> /dev/null | awk '/img1/ { gsub(\"+\", \"\", $5); print $5 }'"
+            extract_fs_block_size = "/sbin/sfdisk -l #{disk_image} 2> /dev/null | awk '/img1/ { gsub(\"\\+\", \"\", $5); print $5 }'"
             
             sudo "/sbin/mke2fs -jqF /dev/loop0 `#{extract_fs_block_size}`"
           ensure
