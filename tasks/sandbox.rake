@@ -314,7 +314,7 @@ class DebianBoostraper
     options = {
       :arch => 'i386',
       :exclude => debootstrap_excludes,
-      :include => %w{puppet ssh}
+      :include => %w{puppet ssh udev resolvconf}
     }
     
     options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
@@ -323,7 +323,7 @@ class DebianBoostraper
 
   def debootstrap_excludes
     # excluded by qemu-make-debian-root
-    %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig wget telnet cron logrotate exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel}
+    %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
   end
 
 end

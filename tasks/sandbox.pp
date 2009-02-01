@@ -58,20 +58,6 @@ iface eth0 inet static
 "
 }
 
-file { "/etc/resolv.conf":
-  content => "nameserver $host_ip
-"
-}
-
-exec { "apt-get update": 
-  alias => "apt-update"
-}
-
-package { [udev, resolvconf]: 
-  ensure => present,
-  require => Exec["apt-update"]
-}
-
 # puppet configuration
 
 file { "/etc/default/puppet":
