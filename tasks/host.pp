@@ -3,33 +3,40 @@ Exec { path => "/usr/bin:/usr/sbin/:/bin:/sbin" }
 # install qemu
 
 package { qemu: 
-  ensure => installed
+  ensure => "0.9.1+svn20090104-1"
+}
+
+case $operatingsystem {
+  debian: {
+    notice("qemu from experimental is required for the moment")
+
+    file { "/etc/apt/sources.list.d/debian-experimental.list":
+      content => "deb http://ftp.debian.org/debian/ experimental main"
+    }
+
+    exec { "apt-get update":
+      require => File["/etc/apt/sources.list.d/debian-experimental.list"]
+    }
+
+    exec { "apt-get install -t experimental -y --force-yes qemu":
+      require => Exec["apt-get update"],
+      before => Package[qemu]
+    }
+  }
 }
 
 # compile kqemu module 
 
-package { [module-assistant, kqemu-common]: 
-  ensure => installed
-}
-
-case $lsbdistdescription {
-  "Ubuntu 8.10": { # fix for ubuntu
-    notice("Use debian kqemu 1.4.0 (kqemu-source 1.3.0 is broken on intreprid):")
-    $debian_kqemu_url="http://ftp.debian.org/debian/pool/main/k/kqemu/kqemu-source_1.4.0~pre1-1_all.deb"
-    exec { "backport-kqemu":
-      command => "wget -O /tmp/kqemu-source.deb $debian_kqemu_url  && dpkg -i /tmp/kqemu-source.deb",
-      unless => "dpkg -l kqemu-source | grep 1.4.0",
-      before => Exec["modass-kqemu"],
-      require => [Package[debhelper], Package[dpatch]]
-    }
-    package { [debhelper, dpatch]: ensure => installed }
-  }
+package { kqemu-source:
+  ensure => "1.4.0~pre1-1",
+  require => Package[qemu]
 }
 
 exec { "modass-kqemu":
-  command => "module-assistant a-i kqemu",
+  # modass returns 249 with non-inter ...
+  command => 'module-assistant --non-inter a-i kqemu || dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
   unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
-  require => [Package[module-assistant], Package[kqemu-common]]
+  require => Package[kqemu-source]
 }
 
 exec { "add kqemu in /etc/modules":
@@ -38,9 +45,16 @@ exec { "add kqemu in /etc/modules":
   require => Exec["modass-kqemu"]
 }
 
+exec { "modprobe-kqemu":
+  command => "modprobe kqemu",
+  unless => "lsmod | grep kqemu",
+  require => Exec["modass-kqemu"]
+}
+
 file { "/dev/kqemu":
   # default permissions on debian, but not on ubuntu
-  mode => 666
+  mode => 666,
+  require => Exec["modprobe-kqemu"]
 }
 
 # install uml-utilities for tunctl 
@@ -75,5 +89,6 @@ fi
 /sbin/ifconfig $1 172.20.0.1
 iptables -t nat -A POSTROUTING -s 172.20.0.1/24 -o eth0 -j MASQUERADE
 sysctl -w net.ipv4.ip_forward=1
-'
+',
+  require => Package[qemu]
 }
