@@ -84,10 +84,36 @@ class Sandbox < Rake::TaskLib
         end
 
         task :kernel do
-          # TODO : install a kernel and a boot loader grub
-          # mount do
-          #   sudo "chroot #{mount_point} sh -c \"echo 'do_initrd = Yes' >> /etc/kernel-img.conf && DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub linux-image-2.6-686\""
-          # end
+          mount do
+            chroot_sh "echo 'do_initrd = Yes' >> /etc/kernel-img.conf"
+            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub linux-image-2.6-686"
+
+            chroot_sh "mkdir /boot/grub"
+            sudo "cp /boot/grub/stage1 #{mount_point}/boot/grub"
+            sudo "cp /boot/grub/stage2 #{mount_point}/boot/grub"
+            sudo "cp /boot/grub/e2fs_stage1_5 #{mount_point}/boot/grub"
+
+            File.open('/tmp/menu.lst', 'w') {|f| f.write(
+              ['default 0',
+               'timeout 0',
+               'title Linux',
+               'root (hd0,0)',
+               'kernel /vmlinuz root=/dev/hda1 ro',
+               'initrd /initrd.img'].join("\n")
+            )}
+
+            sudo "mv /tmp/menu.lst #{mount_point}/boot/grub"
+          end
+
+          File.open('/tmp/grub.input', 'w') {|f| f.write(
+            ["device (hd0) #{disk_image}",
+             'root (hd0,0)',
+             'setup (hd0)',
+             'quit'].join("\n")
+          )}
+
+          sudo "grub --device-map=/dev/null < /tmp/grub.input"
+          rm "/tmp/grub.input"
         end
 
         task :config do
@@ -194,8 +220,6 @@ class Sandbox < Rake::TaskLib
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
-      :initrd => '/initrd.img',
-      :kernel => '/vmlinuz',
       :append => 'console=ttyS0 root=/dev/hda1 ro',
       :nographic => true,
       :m => memory_size,
@@ -295,6 +319,10 @@ class Sandbox < Rake::TaskLib
   def status
     puts "#{hostname} status:"
     puts self.inspect
+  end
+
+  def chroot_sh(cmd)
+    sudo "chroot #{mount_point} sh -c \"#{cmd}\""
   end
 
 end
