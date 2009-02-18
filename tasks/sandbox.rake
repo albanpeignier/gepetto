@@ -197,7 +197,7 @@ class Sandbox < Rake::TaskLib
 
         desc "Run puppetd in sandbox"
         task :run do
-          sh "./script/puppetrun --host #{hostname}"
+          sh "./script/puppetrun --host #{ip_address}"
         end
 
         desc "Sign a request from sandbox"
@@ -220,7 +220,6 @@ class Sandbox < Rake::TaskLib
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
-      :append => 'console=ttyS0 root=/dev/hda1 ro',
       :nographic => true,
       :m => memory_size,
       :net => ["nic", "tap,ifname=#{tap_device}"]
