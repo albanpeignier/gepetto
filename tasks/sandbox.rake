@@ -220,7 +220,7 @@ class Sandbox < Rake::TaskLib
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
-      :nographic => true,
+      :nographic => false,
       :m => memory_size,
       :net => ["nic", "tap,ifname=#{tap_device}"]
     }.update(options)
