@@ -220,7 +220,6 @@ class Sandbox < Rake::TaskLib
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
-      :append => 'console=ttyS0 root=/dev/hda1 ro',
       :nographic => true,
       :m => memory_size,
       :net => ["nic", "tap,ifname=#{tap_device}"]
