@@ -86,8 +86,22 @@ class Sandbox < Rake::TaskLib
         task :kernel do
           mount do
             chroot_sh "echo 'do_initrd = Yes' >> /etc/kernel-img.conf"
-            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub linux-image-2.6-686"
 
+            kernel_packages = {
+              'etch'     => 'linux-image-2.6-686',
+              'lenny'    => 'linux-image-2.6-686',
+              'hardy'    => 'linux-image-2.6.24-16-generic',
+              'intrepid' => 'linux-image-generic'
+            }
+            kernel_package = kernel_packages[self.bootstraper.version]
+
+            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes #{kernel_package}"
+          end
+        end
+
+        task :grub do
+          mount do
+            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub"
             chroot_sh "mkdir /boot/grub"
             sudo "cp /boot/grub/stage1 #{mount_point}/boot/grub"
             sudo "cp /boot/grub/stage2 #{mount_point}/boot/grub"
@@ -107,9 +121,9 @@ class Sandbox < Rake::TaskLib
 
           File.open('/tmp/grub.input', 'w') {|f| f.write(
             ["device (hd0) #{disk_image}",
-             'root (hd0,0)',
-             'setup (hd0)',
-             'quit'].join("\n")
+            "root (hd0,0)",
+            "setup (hd0)",
+            "quit"].join("\n")
           )}
 
           sudo "grub --device-map=/dev/null < /tmp/grub.input"
@@ -144,7 +158,7 @@ class Sandbox < Rake::TaskLib
       end
 
       desc "Create a fresh image for sandbox"
-      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:kernel', 'create:config', 'create:snapshot' ]
+      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:kernel', 'create:grub', 'create:config', 'create:snapshot' ]
 
       desc "Destroy sandbox images"
       task :destroy => 'clean' do
@@ -328,29 +342,55 @@ end
 
 class DebianBoostraper
 
-  attr_accessor :version, :mirror
+  attr_accessor :version, :mirror, :include, :exclude, :arch
 
   def initialize(&block)
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
+    @include = %w{puppet ssh udev resolvconf}
+    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+    @arch = 'i386'
 
     yield self if block_given?
   end
 
   def bootstrap(root)
     options = {
-      :arch => 'i386',
-      :exclude => debootstrap_excludes,
-      :include => %w{puppet ssh udev resolvconf}
+      :arch => @arch,
+      :exclude => @exclude,
+      :include => @include
     }
     
     options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
     sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
   end
 
-  def debootstrap_excludes
-    # excluded by qemu-make-debian-root
-    %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+end
+
+class UbuntuBoostraper
+
+  attr_accessor :version, :mirror, :include, :exclude, :arch
+
+  def initialize(&block)
+    @version = 'intrepid'
+    @mirror = 'http://archive.ubuntu.com/ubuntu/'
+    @include = %w{puppet ssh udev resolvconf}
+    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+    @arch = 'i386'
+
+    yield self if block_given?
+  end
+
+  def bootstrap(root)
+    options = {
+      :arch => @arch,
+      :exclude => @exclude,
+      :include => @include,
+      :components => 'main,universe'
+    }
+
+    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
+    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
   end
 
 end
