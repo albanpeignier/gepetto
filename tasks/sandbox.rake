@@ -225,7 +225,15 @@ class Sandbox < Rake::TaskLib
       end
     end.compact.join(' ')
 
-    sh "qemu #{options_as_string}"
+    qemu_command = 
+      case PLATFORM
+      when /x86_64/
+        "qemu-system-x86_64"
+      else
+        "qemu"
+      end
+
+    sh "#{qemu_command} #{options_as_string}"
   end
 
   def snapshot(name)
