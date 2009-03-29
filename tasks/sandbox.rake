@@ -309,18 +309,25 @@ end
 
 class DebianBoostraper
 
-  attr_accessor :version, :mirror
+  attr_accessor :version, :mirror, :architecture
 
   def initialize(&block)
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
+    @architecture =
+      case PLATFORM
+      when /x86_64/
+        "amd64"
+      else
+        "i386"
+      end
 
     yield self if block_given?
   end
 
   def bootstrap(root)
     options = {
-      :arch => 'i386',
+      :arch => architecture,  
       :exclude => debootstrap_excludes,
       :include => %w{puppet ssh udev resolvconf}
     }
