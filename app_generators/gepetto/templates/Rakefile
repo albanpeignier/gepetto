@@ -15,7 +15,7 @@ Sandbox.new do |s|
     # d.mirror = 'http://ftp.fr.debian.org/debian'
 
     # Use a local apt-proxy
-    # d.mirror = 'http://localhost:9999/debian'
+    # d.mirror = 'http://127.0.0.1:9999/debian'
   end
 
   # s.disk_size = '1G'
