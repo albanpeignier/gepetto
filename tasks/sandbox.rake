@@ -353,6 +353,15 @@ class DebianBoostraper
   attr_accessor :version, :mirror, :include, :exclude, :architecture
 
   def initialize(&block)
+    default_attributes
+
+    @include = %w{puppet ssh udev resolvconf}
+    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+
+    yield self if block_given?
+  end
+
+  def default_attributes
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
 
@@ -363,50 +372,34 @@ class DebianBoostraper
       else
         "i386"
       end
-
-    @include = %w{puppet ssh udev resolvconf}
-    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
-
-    yield self if block_given?
   end
 
   def bootstrap(root)
-    options = {
+    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
+    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
+  end
+
+  def options
+    {
       :arch => architecture,  
       :exclude => @exclude,
       :include => @include
     }
-    
-    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
-    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
   end
 
 end
 
-class UbuntuBoostraper
+class UbuntuBoostraper < DebianBoostraper
 
-  attr_accessor :version, :mirror, :include, :exclude, :arch
+  def default_attributes
+    super
 
-  def initialize(&block)
     @version = 'intrepid'
     @mirror = 'http://archive.ubuntu.com/ubuntu/'
-    @include = %w{puppet ssh udev resolvconf}
-    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
-    @arch = 'i386'
-
-    yield self if block_given?
   end
 
-  def bootstrap(root)
-    options = {
-      :arch => @arch,
-      :exclude => @exclude,
-      :include => @include,
-      :components => 'main,universe'
-    }
-
-    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
-    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
+  def options
+    super.update :components => 'main,universe'
   end
 
 end
