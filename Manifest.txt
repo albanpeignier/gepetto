@@ -19,7 +19,6 @@ app_generators/gepetto/templates/script/puppetrun
 bin/gepetto
 gepetto.gemspec
 lib/gepetto.rb
-lib/gepetto/module.rb
 lib/gepetto/tasks.rb
 puppet_generators/module/USAGE
 puppet_generators/module/module_generator.rb
