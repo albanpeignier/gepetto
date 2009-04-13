@@ -6,7 +6,7 @@
 # change working directories
 OPTIONS="--logdir=$PWD/log --vardir=$PWD/tmp/lib --rundir=$PWD/tmp/run --ssldir=$PWD/tmp/ssl"
 # use local files
-OPTIONS="$OPTIONS --templatedir=$PWD/templates --manifestdir=$PWD/manifests --modulepath=$PWD/modules"
+OPTIONS="$OPTIONS --templatedir=$PWD/templates --manifestdir=$PWD/manifests --modulepath=$PWD/modules --confdir=$PWD/config"
 
 OPTIONS="$OPTIONS --certname=puppet --logdest=console"
 
