@@ -3,7 +3,10 @@ Exec { path => "/usr/bin:/usr/sbin/:/bin:/sbin" }
 # install qemu
 
 package { qemu: 
-  ensure => "0.9.1+svn20090104-1"
+  ensure => $operatingsystem ? {
+    debian => "0.9.1+svn20090104-1",
+    ubuntu => "latest"
+  }
 }
 
 case $operatingsystem {
@@ -28,7 +31,10 @@ case $operatingsystem {
 # compile kqemu module 
 
 package { kqemu-source:
-  ensure => "1.4.0~pre1-1",
+  ensure => $operatingsystem ? {
+    debian => "1.4.0~pre1-1",
+    ubuntu => "present"
+  },
   require => Package[qemu]
 }
 

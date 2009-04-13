@@ -84,10 +84,50 @@ class Sandbox < Rake::TaskLib
         end
 
         task :kernel do
-          # TODO : install a kernel and a boot loader grub
-          # mount do
-          #   sudo "chroot #{mount_point} sh -c \"echo 'do_initrd = Yes' >> /etc/kernel-img.conf && DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub linux-image-2.6-686\""
-          # end
+          mount do
+            chroot_sh "echo 'do_initrd = Yes' >> /etc/kernel-img.conf"
+
+            kernel_packages = {
+              'etch'     => 'linux-image-2.6-686',
+              'lenny'    => 'linux-image-2.6-686',
+              'hardy'    => 'linux-image-2.6.24-16-generic',
+              'intrepid' => 'linux-image-generic'
+            }
+            kernel_package = kernel_packages[self.bootstraper.version]
+
+            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes #{kernel_package}"
+          end
+        end
+
+        task :grub do
+          mount do
+            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub"
+            chroot_sh "mkdir /boot/grub"
+            sudo "cp /boot/grub/stage1 #{mount_point}/boot/grub"
+            sudo "cp /boot/grub/stage2 #{mount_point}/boot/grub"
+            sudo "cp /boot/grub/e2fs_stage1_5 #{mount_point}/boot/grub"
+
+            File.open('/tmp/menu.lst', 'w') {|f| f.write(
+              ['default 0',
+               'timeout 0',
+               'title Linux',
+               'root (hd0,0)',
+               'kernel /vmlinuz root=/dev/hda1 ro',
+               'initrd /initrd.img'].join("\n")
+            )}
+
+            sudo "mv /tmp/menu.lst #{mount_point}/boot/grub"
+          end
+
+          File.open('/tmp/grub.input', 'w') {|f| f.write(
+            ["device (hd0) #{disk_image}",
+            "root (hd0,0)",
+            "setup (hd0)",
+            "quit"].join("\n")
+          )}
+
+          sudo "grub --device-map=/dev/null < /tmp/grub.input"
+          rm "/tmp/grub.input"
         end
 
         task :config do
@@ -118,7 +158,7 @@ class Sandbox < Rake::TaskLib
       end
 
       desc "Create a fresh image for sandbox"
-      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:kernel', 'create:config', 'create:snapshot' ]
+      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:kernel', 'create:grub', 'create:config', 'create:snapshot' ]
 
       desc "Destroy sandbox images"
       task :destroy => 'clean' do
@@ -194,10 +234,7 @@ class Sandbox < Rake::TaskLib
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
-      :initrd => '/initrd.img',
-      :kernel => '/vmlinuz',
-      :append => 'console=ttyS0 root=/dev/hda1 ro',
-      :nographic => true,
+      :nographic => false,
       :m => memory_size,
       :net => ["nic", "tap,ifname=#{tap_device}"]
     }.update(options)
@@ -305,15 +342,20 @@ class Sandbox < Rake::TaskLib
     puts self.inspect
   end
 
+  def chroot_sh(cmd)
+    sudo "chroot #{mount_point} sh -c \"#{cmd}\""
+  end
+
 end
 
 class DebianBoostraper
 
-  attr_accessor :version, :mirror, :architecture
+  attr_accessor :version, :mirror, :include, :exclude, :architecture
 
   def initialize(&block)
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
+
     @architecture =
       case PLATFORM
       when /x86_64/
@@ -322,23 +364,49 @@ class DebianBoostraper
         "i386"
       end
 
+    @include = %w{puppet ssh udev resolvconf}
+    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+
     yield self if block_given?
   end
 
   def bootstrap(root)
     options = {
       :arch => architecture,  
-      :exclude => debootstrap_excludes,
-      :include => %w{puppet ssh udev resolvconf}
+      :exclude => @exclude,
+      :include => @include
     }
     
     options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
     sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
   end
 
-  def debootstrap_excludes
-    # excluded by qemu-make-debian-root
-    %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+end
+
+class UbuntuBoostraper
+
+  attr_accessor :version, :mirror, :include, :exclude, :arch
+
+  def initialize(&block)
+    @version = 'intrepid'
+    @mirror = 'http://archive.ubuntu.com/ubuntu/'
+    @include = %w{puppet ssh udev resolvconf}
+    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+    @arch = 'i386'
+
+    yield self if block_given?
+  end
+
+  def bootstrap(root)
+    options = {
+      :arch => @arch,
+      :exclude => @exclude,
+      :include => @include,
+      :components => 'main,universe'
+    }
+
+    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
+    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
   end
 
 end
