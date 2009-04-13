@@ -102,10 +102,12 @@ class Sandbox < Rake::TaskLib
         task :grub do
           mount do
             chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub"
-            chroot_sh "mkdir /boot/grub"
-            sudo "cp /boot/grub/stage1 #{mount_point}/boot/grub"
-            sudo "cp /boot/grub/stage2 #{mount_point}/boot/grub"
-            sudo "cp /boot/grub/e2fs_stage1_5 #{mount_point}/boot/grub"
+
+            grub_dir = "#{mount_point}/boot/grub"
+            chroot_sh "mkdir /boot/grub" unless File.exists?(grub_dir)
+
+            stage_files = Dir["#{mount_point}/usr/lib/grub/**/stage?", "#{mount_point}/usr/lib/grub/**/e2fs_stage1_5"]
+            sudo "cp #{stage_files.join(' ')} #{grub_dir}"
 
             File.open('/tmp/menu.lst', 'w') {|f| f.write(
               ['default 0',
@@ -116,7 +118,7 @@ class Sandbox < Rake::TaskLib
                'initrd /initrd.img'].join("\n")
             )}
 
-            sudo "mv /tmp/menu.lst #{mount_point}/boot/grub"
+            sudo "mv /tmp/menu.lst #{grub_dir}"
           end
 
           File.open('/tmp/grub.input', 'w') {|f| f.write(
