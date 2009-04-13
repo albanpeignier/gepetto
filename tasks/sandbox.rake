@@ -109,27 +109,26 @@ class Sandbox < Rake::TaskLib
             stage_files = Dir["#{mount_point}/usr/lib/grub/**/stage?", "#{mount_point}/usr/lib/grub/**/e2fs_stage1_5"]
             sudo "cp #{stage_files.join(' ')} #{grub_dir}"
 
-            File.open('/tmp/menu.lst', 'w') {|f| f.write(
-              ['default 0',
-               'timeout 0',
-               'title Linux',
-               'root (hd0,0)',
-               'kernel /vmlinuz root=/dev/hda1 ro',
-               'initrd /initrd.img'].join("\n")
-            )}
-
-            sudo "mv /tmp/menu.lst #{grub_dir}"
+            Tempfile.open('menu_lst') do |f|
+              f.write(['default 0',
+                       'timeout 0',
+                       'title Linux',
+                       'root (hd0,0)',
+                       'kernel /vmlinuz root=/dev/hda1 ro',
+                       'initrd /initrd.img'].join("\n"))
+              f.close
+              sudo "cp #{f.path} #{grub_dir}"
+            end
           end
 
-          File.open('/tmp/grub.input', 'w') {|f| f.write(
-            ["device (hd0) #{disk_image}",
-            "root (hd0,0)",
-            "setup (hd0)",
-            "quit"].join("\n")
-          )}
-
-          sudo "grub --device-map=/dev/null < /tmp/grub.input"
-          rm "/tmp/grub.input"
+          Tempfile.open('grub_input') do |f| 
+            f.write(["device (hd0) #{disk_image}",
+                     "root (hd0,0)",
+                     "setup (hd0)",
+                     "quit"].join("\n"))
+            f.close
+            sudo "grub --device-map=/dev/null < #{f.path}"
+          end
         end
 
         task :config do
