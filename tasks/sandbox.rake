@@ -117,7 +117,7 @@ class Sandbox < Rake::TaskLib
                        'kernel /vmlinuz root=/dev/hda1 ro',
                        'initrd /initrd.img'].join("\n"))
               f.close
-              sudo "cp #{f.path} #{grub_dir}"
+              sudo "cp #{f.path} #{grub_dir}/menu.lst"
             end
           end
 
