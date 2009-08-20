@@ -3,38 +3,13 @@ Exec { path => "/usr/bin:/usr/sbin/:/bin:/sbin" }
 # install qemu
 
 package { qemu: 
-  ensure => $operatingsystem ? {
-    debian => "0.9.1+svn20090104-1",
-    ubuntu => "latest"
-  }
-}
-
-case $operatingsystem {
-  debian: {
-    notice("qemu from experimental is required for the moment")
-
-    file { "/etc/apt/sources.list.d/debian-experimental.list":
-      content => "deb http://ftp.debian.org/debian/ experimental main"
-    }
-
-    exec { "apt-get update":
-      require => File["/etc/apt/sources.list.d/debian-experimental.list"]
-    }
-
-    exec { "apt-get install -t experimental -y --force-yes qemu":
-      require => Exec["apt-get update"],
-      before => Package[qemu]
-    }
-  }
+  ensure => "latest"
 }
 
 # compile kqemu module 
 
 package { kqemu-source:
-  ensure => $operatingsystem ? {
-    debian => "1.4.0~pre1-1",
-    ubuntu => "present"
-  },
+  ensure => "latest",
   require => Package[qemu]
 }
 
