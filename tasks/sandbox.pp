@@ -45,6 +45,11 @@ package { [console-common,console-tools,console-data,base-config,man-db,manpages
   ensure => absent
 }
 
+# if network configuration changes, eth0 is renamed by udev :-/
+file { "/etc/udev/rules.d/70-persistent-net.rules":
+  ensure => absent
+}
+
 file { "/etc/network/interfaces":
   content => "auto lo
 iface lo inet loopback
