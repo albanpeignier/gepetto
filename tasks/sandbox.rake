@@ -4,6 +4,15 @@ require 'tempfile'
 
 class Sandbox < Rake::TaskLib
 
+  def self.default_architecture
+    case PLATFORM
+    when /x86_64/
+      "amd64"
+    else
+      "i386"
+    end
+  end
+
   @@images_directory = "/var/tmp"
 
   def self.images_directory
@@ -21,6 +30,7 @@ class Sandbox < Rake::TaskLib
   attr_reader :name
   attr_accessor :bootstraper, :ip_address, :host_ip_address, :tap_device
   attr_accessor :disk_size, :memory_size, :mount_point
+  attr_accessor :architecture
 
   def initialize(name = "sandbox")
     @name = name
@@ -31,7 +41,8 @@ class Sandbox < Rake::TaskLib
   end
 
   def define
-    @bootstraper ||= DebianBoostraper.new
+    @architecture = Sandbox.default_architecture
+    bootstraper = DebianBoostraper.new
 
     @ip_address ||= '172.20.0.2'
     @host_ip_address ||= @ip_address.gsub(/\.[0-9]+$/,'.1')
@@ -41,6 +52,31 @@ class Sandbox < Rake::TaskLib
 
     @mount_point ||= "/mnt/#{name}"
     @tap_device ||= 'tap0'
+  end
+
+  def bootstraper=(bootstraper)
+    @bootstraper = bootstraper
+    sync_architecture
+  end
+
+  def architecture=(architecture)
+    @architecture = architecture
+    sync_architecture
+  end
+
+  def sync_architecture
+    if self.bootstraper and self.architecture 
+      self.bootstraper.architecture = self.architecture 
+    end
+  end
+
+  def kernel_architecture
+    case self.architecture
+    when 'i386'
+      '686'
+    else 
+      self.architecture
+    end
   end
 
   def init
@@ -87,13 +123,15 @@ class Sandbox < Rake::TaskLib
           mount do
             chroot_sh "echo 'do_initrd = Yes' >> /etc/kernel-img.conf"
 
-            kernel_packages = {
-              'etch'     => 'linux-image-2.6-686',
-              'lenny'    => 'linux-image-2.6-686',
-              'hardy'    => 'linux-image-2.6.24-16-generic',
-              'intrepid' => 'linux-image-generic'
-            }
-            kernel_package = kernel_packages[self.bootstraper.version]
+            kernel_package =
+              case self.bootstraper.version
+              when 'etch', 'lenny'
+                "linux-image-2.6-#{kernel_architecture}"
+              when 'hardy'    
+                'linux-image-2.6.24-16-generic'
+              when 'intrepid'
+                'linux-image-generic'
+              end
 
             chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes #{kernel_package}"
           end
@@ -365,14 +403,7 @@ class DebianBoostraper
   def default_attributes
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
-
-    @architecture =
-      case PLATFORM
-      when /x86_64/
-        "amd64"
-      else
-        "i386"
-      end
+    @architecture = Sandbox.default_architecture
   end
 
   def bootstrap(root)
