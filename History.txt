@@ -1,4 +1,8 @@
-== 0.0.1 2009-01-18
+== 0.0.9 2009-12-15
 
-* 1 major enhancement:
-  * Initial release
+* Add sandbox manifest files
+
+== 0.0.8 2009-11-02
+
+* Fix a problem with network interface renaming performed by udev
+* Choose installed kernel according to a new Sandbox#attribute attribute
