@@ -4,6 +4,7 @@
 # http://reductivelabs.com/trac/puppet/wiki/PuppetBestPractice
 
 import "defaults"
-import "classes/*"
+import "classes/*.pp"
 import "templates"
 import "nodes"
+import "sandbox*.pp"

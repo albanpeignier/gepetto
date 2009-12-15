@@ -22,6 +22,10 @@ class GepettoGenerator < RubiGen::Base
 
       m.template_copy_each %w( defaults.pp site.pp templates.pp nodes.pp ), 'manifests'
 
+      m.template_copy_each %w( defaults.pp site.pp templates.pp nodes.pp ), 'manifests'
+
+      m.template_copy_each %w( sandbox.pp sandbox-sample.pp ), 'manifests'
+
       m.template_copy_each %w( empty.pp ), 'manifests/classes'
 
       m.template_copy_each %w( puppet.conf fileserver.conf ), 'config'

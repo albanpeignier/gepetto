@@ -12,6 +12,8 @@ app_generators/gepetto/templates/manifests/defaults.pp
 app_generators/gepetto/templates/manifests/nodes.pp
 app_generators/gepetto/templates/manifests/site.pp
 app_generators/gepetto/templates/manifests/templates.pp
+app_generators/gepetto/templates/manifests/sandbox.pp
+app_generators/gepetto/templates/manifests/sandbox-sample.pp
 app_generators/gepetto/templates/script/module
 app_generators/gepetto/templates/script/puppetca
 app_generators/gepetto/templates/script/puppetmasterd
