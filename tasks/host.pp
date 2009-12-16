@@ -13,23 +13,25 @@ package { kqemu-source:
   require => Package[qemu]
 }
 
-exec { "modass-kqemu":
-  # modass returns 249 with non-inter ...
-  command => 'module-assistant --non-inter a-i kqemu || dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
-  unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
-  require => Package[kqemu-source]
-}
-
-exec { "add kqemu in /etc/modules":
-  command => "echo kqemu >> /etc/modules",
-  unless => "grep kqemu /etc/modules",
-  require => Exec["modass-kqemu"]
+if $operatingsystem == Debian {
+  # under Ubuntu, dkms does the job
+  exec { "modass-kqemu":
+    # modass returns 249 with non-inter ...
+    command => 'module-assistant --non-inter a-i kqemu || dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
+    unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
+    require => Package[kqemu-source]
+  }
+  
+  exec { "add kqemu in /etc/modules":
+    command => "echo kqemu >> /etc/modules",
+    unless => "grep kqemu /etc/modules",
+    require => Exec["modass-kqemu"]
+  }
 }
 
 exec { "modprobe-kqemu":
   command => "modprobe kqemu",
-  unless => "lsmod | grep kqemu",
-  require => Exec["modass-kqemu"]
+  unless => "lsmod | grep kqemu"
 }
 
 file { "/dev/kqemu":
@@ -73,3 +75,5 @@ sysctl -w net.ipv4.ip_forward=1
 ',
   require => Package[qemu]
 }
+
+package { [debootstrap, grub]: }
