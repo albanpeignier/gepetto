@@ -14,7 +14,9 @@ $hoe = Hoe.spec 'gepetto' do
   self.developer('Alban Peignier', 'alban.peignier@free.fr')
   self.changes              = self.paragraphs_of("History.txt", 0..1).join("\n\n")
   self.rubyforge_name       = self.name # TODO this is default value
-  self.extra_deps << ["rubigen"]
+
+  self.extra_deps << "rubigen"
+  self.extra_deps << "rake"
 
   self.clean_globs |= %w[**/.DS_Store tmp *.log]
   path = (self.rubyforge_name == self.name) ? self.rubyforge_name : "\#{self.rubyforge_name}/\#{self.name}"
