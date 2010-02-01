@@ -18,7 +18,7 @@ if $operatingsystem == Debian {
   exec { "modass-kqemu":
     # modass returns 249 with non-inter ...
     command => 'module-assistant --non-inter a-i kqemu || dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
-    unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii',
+    unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii' ,
     require => Package[kqemu-source]
   }
   
@@ -31,7 +31,8 @@ if $operatingsystem == Debian {
 
 exec { "modprobe-kqemu":
   command => "modprobe kqemu",
-  unless => "lsmod | grep kqemu"
+  unless => "lsmod | grep kqemu",
+  require => Package[kqemu-source]
 }
 
 file { "/dev/kqemu":
