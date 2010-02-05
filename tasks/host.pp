@@ -58,23 +58,10 @@ file { "/dev/net/tun":
   mode => 666
 }
 
-# provide a basic qemu-ifup
+package { debootstrap: }
 
-file { "/etc/qemu-ifup":
-  mode => 755,
-  content => '#!/bin/sh -x
-
-if [ "$USER" != "root" -o "$1" != "sudo" ]; then
-  exec sudo -p "Password for $0:" $0 sudo $1
-fi
-
-[ "$1" = "sudo" ] && shift
-
-/sbin/ifconfig $1 172.20.0.1
-iptables -t nat -A POSTROUTING -s 172.20.0.1/24 -o eth0 -j MASQUERADE
-sysctl -w net.ipv4.ip_forward=1
-',
-  require => Package[qemu]
+if $operatingsystem == Debian {
+  package { [syslinux-common, extlinux]: }
+} else {
+  package { syslinux: }
 }
-
-package { [debootstrap, grub]: }

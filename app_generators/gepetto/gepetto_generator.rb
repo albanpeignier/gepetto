@@ -29,6 +29,7 @@ class GepettoGenerator < RubiGen::Base
       m.template_copy_each %w( empty.pp ), 'manifests/classes'
 
       m.template_copy_each %w( puppet.conf fileserver.conf ), 'config'
+      m.template_copy_each %w( qemu-ifup ), 'config', script_options
 
       m.template_copy_each %w( puppetmasterd puppetca puppetrun module ), 'script', script_options
 

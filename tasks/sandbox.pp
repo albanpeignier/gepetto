@@ -24,8 +24,12 @@ exec { "inittab-no-tty-gettys":
   onlyif => "grep 'getty 38400 tty[23456]' /etc/inittab"
 }
 
-file { "/etc/hostname":
+file { ["/etc/hostname", "/etc/mailname"]:
   content => "sandbox"
+}
+
+file {  "/etc/default/locale":
+  content => "LANG=en_US.UTF-8"
 }
 
 # an host object doesn't find a provider
@@ -88,6 +92,7 @@ pluginsync=false
 color=false
 
 [puppetd]
+certname=sandbox
 report=true
 # run puppetd .. every day
 runinterval = 86400

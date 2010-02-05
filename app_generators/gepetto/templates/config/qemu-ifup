@@ -1,0 +1,11 @@
+#!/bin/sh -x
+
+if [ "$USER" != "root" -o "$1" != "sudo" ]; then
+  exec sudo -p "Password for $0:" $0 sudo $1
+fi
+
+[ "$1" = "sudo" ] && shift
+
+/sbin/ifconfig $1 172.20.0.1
+iptables -t nat -A POSTROUTING -s 172.20.0.1/24 -o eth0 -j MASQUERADE
+sysctl -w net.ipv4.ip_forward=1

@@ -95,7 +95,7 @@ class Sandbox < Rake::TaskLib
         task :image do
           sh "qemu-img create -f raw #{disk_image} #{disk_size}"
           # create the partition table
-          sh "echo '63,' | /sbin/sfdisk --no-reread -uS -H16 -S63 #{disk_image}"
+          sh "echo '63,,L,*' | /sbin/sfdisk --no-reread -uS -H16 -S63 #{disk_image}"
         end
 
         task :fs do 
@@ -104,9 +104,10 @@ class Sandbox < Rake::TaskLib
             sudo "losetup -o #{fs_offset} /dev/loop0 #{disk_image}"
             
             # because '/sbin/sfdisk -s /dev/loop0' returns a wrong value :
-            extract_fs_block_size = "/sbin/sfdisk -l #{disk_image} 2> /dev/null | awk '/img1/ { gsub(\"\\+\", \"\", $5); print $5 }'"
+            linux_partition_info = `/sbin/sfdisk -l #{disk_image}`.scan(%r{#{disk_image}.*Linux}).first
+            extract_fs_block_size = linux_partition_info.split[5].to_i
             
-            sudo "/sbin/mke2fs -jqF /dev/loop0 `#{extract_fs_block_size}`"
+            sudo "/sbin/mke2fs -jqF /dev/loop0 #{extract_fs_block_size}"
           ensure
             sudo "losetup -d /dev/loop0"
           end
@@ -137,35 +138,39 @@ class Sandbox < Rake::TaskLib
           end
         end
 
-        task :grub do
+        task :syslinux do
+          extlinux_dir = "#{mount_point}/boot/extlinux"
+
           mount do
-            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes grub"
-
-            grub_dir = "#{mount_point}/boot/grub"
-            chroot_sh "mkdir /boot/grub" unless File.exists?(grub_dir)
-
-            stage_files = Dir["#{mount_point}/usr/lib/grub/**/stage?", "#{mount_point}/usr/lib/grub/**/e2fs_stage1_5"]
-            sudo "cp #{stage_files.join(' ')} #{grub_dir}"
-
-            Tempfile.open('menu_lst') do |f|
-              f.write(['default 0',
-                       'timeout 0',
-                       'title Linux',
-                       'root (hd0,0)',
-                       'kernel /vmlinuz root=/dev/hda1 ro',
-                       'initrd /initrd.img'].join("\n"))
+            sudo "mkdir -p #{extlinux_dir}" unless File.exists?(extlinux_dir)
+            Tempfile.open('extlinux_conf') do |f|
+              f.puts "DEFAULT linux"
+              f.puts "LABEL linux"
+              f.puts "SAY Now booting sandbox from syslinux ..."
+              f.puts "KERNEL /vmlinuz"
+              f.puts "APPEND ro root=/dev/hda1 initrd=/initrd.img"
               f.close
-              sudo "cp #{f.path} #{grub_dir}/menu.lst"
+              sudo "cp #{f.path} #{extlinux_dir}/extlinux.conf"
             end
-          end
 
-          Tempfile.open('grub_input') do |f| 
-            f.write(["device (hd0) #{disk_image}",
-                     "root (hd0,0)",
-                     "setup (hd0)",
-                     "quit"].join("\n"))
-            f.close
-            sudo "grub --device-map=/dev/null < #{f.path}"
+            sudo "extlinux --install -H16 -S63 #{mount_point}/boot/extlinux"
+          end
+          sudo "dd if=/usr/lib/syslinux/mbr.bin of=#{disk_image} conv=notrunc"
+        end
+
+        task :ssh do
+          ssh_pubkey = Dir["#{ENV['HOME']}/.ssh/id_*pub"].first
+          ssh_dir = "#{mount_point}/root/.ssh"
+
+          mount do
+            sudo "mkdir #{ssh_dir}"
+            sudo "cp #{ssh_pubkey} #{ssh_dir}/authorized_keys"
+          end
+        end
+
+        task :update do
+          mount do
+            chroot_sh "apt-get update"
           end
         end
 
@@ -197,7 +202,7 @@ class Sandbox < Rake::TaskLib
       end
 
       desc "Create a fresh image for sandbox"
-      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:kernel', 'create:grub', 'create:config', 'create:snapshot' ]
+      task :create => [ 'clean', 'create:image', 'create:fs', 'create:system', 'create:update', 'create:kernel', 'create:syslinux', 'create:config', 'create:ssh', 'create:snapshot' ]
 
       desc "Destroy sandbox images"
       task :destroy => 'clean' do
@@ -239,7 +244,7 @@ class Sandbox < Rake::TaskLib
       task :clean => 'puppet:clean' do
         # clean known_hosts
         known_hosts_file="#{ENV['HOME']}/.ssh/known_hosts"
-        sh "sed -i '/#{hostname},#{ip_address}/ d' #{known_hosts_file}" if File.exists?(known_hosts_file)
+        sh "sed -i -e '/#{hostname} / d'  -e '/#{ip_address} / d' #{known_hosts_file}" if File.exists?(known_hosts_file)
       end
 
       task :status do
@@ -274,8 +279,9 @@ class Sandbox < Rake::TaskLib
       :snapshot => ENV['SNAPSHOT'],
       :hda => disk_image,
       :nographic => false,
+      :"enable-kvm" => true,
       :m => memory_size,
-      :net => ["nic", "tap,ifname=#{tap_device}"]
+      :net => ["nic", "tap,ifname=#{tap_device},script=config/qemu-ifup"]
     }.update(options)
 
     if options[:daemonize]
@@ -394,8 +400,9 @@ class DebianBoostraper
   def initialize(&block)
     default_attributes
 
-    @include = %w{puppet ssh udev resolvconf}
-    @exclude = %w{syslinux at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+    # extlinux is provided by syslinux in lenny
+    @include = %w{puppet ssh udev resolvconf syslinux debian-archive-keyring}
+    @exclude = %w{at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
 
     yield self if block_given?
   end
@@ -404,6 +411,7 @@ class DebianBoostraper
     @version = 'lenny'
     @mirror = 'http://ftp.debian.org/debian'
     @architecture = Sandbox.default_architecture
+    @components = %w{main contrib non-free}
   end
 
   def bootstrap(root)
@@ -415,7 +423,8 @@ class DebianBoostraper
     {
       :arch => architecture,  
       :exclude => @exclude,
-      :include => @include
+      :include => @include,
+      :components => @components
     }
   end
 

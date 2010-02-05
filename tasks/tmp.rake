@@ -16,7 +16,11 @@ namespace :tmp do
     namespace name do
       desc "Clears all files in #{tmp_directory}"
       task :clear do
-        FileUtils.rm(Dir["#{tmp_directory}/[^.]*"])
+        files = Dir["#{tmp_directory}/**/*"].reject { |f| File.directory?(f) }
+        unless files.empty?
+          puts "* remove #{files.size} files in #{tmp_directory}"
+          FileUtils.rm files
+        end
       end
     end
   end

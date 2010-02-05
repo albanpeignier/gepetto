@@ -7,13 +7,14 @@ app_generators/gepetto/gepetto_generator.rb
 app_generators/gepetto/templates/Rakefile
 app_generators/gepetto/templates/config/fileserver.conf
 app_generators/gepetto/templates/config/puppet.conf
+app_generators/gepetto/templates/config/qemu-ifup
 app_generators/gepetto/templates/manifests/classes/empty.pp
 app_generators/gepetto/templates/manifests/defaults.pp
 app_generators/gepetto/templates/manifests/nodes.pp
+app_generators/gepetto/templates/manifests/sandbox-sample.pp
+app_generators/gepetto/templates/manifests/sandbox.pp
 app_generators/gepetto/templates/manifests/site.pp
 app_generators/gepetto/templates/manifests/templates.pp
-app_generators/gepetto/templates/manifests/sandbox.pp
-app_generators/gepetto/templates/manifests/sandbox-sample.pp
 app_generators/gepetto/templates/script/module
 app_generators/gepetto/templates/script/puppetca
 app_generators/gepetto/templates/script/puppetmasterd
