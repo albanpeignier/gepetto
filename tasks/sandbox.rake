@@ -229,7 +229,8 @@ class Sandbox < Rake::TaskLib
         sh "kill -9 `cat tmp/run/#{name}.pid`"
       end
 
-      task :revert do
+      desc "Revert to the initial image"
+      task :revert => 'puppet:clean' do
         sh "qemu-img convert -O raw #{disk_image(:initial)} #{disk_image}"
       end
 
