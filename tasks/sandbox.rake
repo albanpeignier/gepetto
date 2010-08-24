@@ -95,7 +95,7 @@ class Sandbox < Rake::TaskLib
         task :image do
           sh "qemu-img create -f raw #{disk_image} #{disk_size}"
           # create the partition table
-          sh "echo '63,,L,*' | /sbin/sfdisk --no-reread -uS -H16 -S63 #{disk_image}"
+          sh "echo '63,,L,*' | /sbin/sfdisk --force --no-reread -uS -H16 -S63 #{disk_image}"
         end
 
         task :fs do 
@@ -399,11 +399,10 @@ class DebianBoostraper
   attr_accessor :version, :mirror, :include, :exclude, :architecture
 
   def initialize(&block)
-    default_attributes
-
-    # extlinux is provided by syslinux in lenny
     @include = %w{puppet ssh udev resolvconf syslinux debian-archive-keyring}
     @exclude = %w{at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+
+    default_attributes
 
     yield self if block_given?
   end
@@ -417,7 +416,7 @@ class DebianBoostraper
 
   def bootstrap(root)
     options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
-    sudo "debootstrap #{options_as_string} #{version} #{root} #{mirror}"
+    sudo "debootstrap --variant=minbase #{options_as_string} #{version} #{root} #{mirror}"
   end
 
   def options
@@ -436,6 +435,7 @@ class UbuntuBoostraper < DebianBoostraper
   def default_attributes
     super
 
+    @include << "ubuntu-minimal"
     @version = 'intrepid'
     @mirror = 'http://archive.ubuntu.com/ubuntu/'
   end
