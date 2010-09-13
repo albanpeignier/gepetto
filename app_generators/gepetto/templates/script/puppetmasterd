@@ -10,4 +10,4 @@ OPTIONS="$OPTIONS --templatedir=$PWD/templates --manifestdir=$PWD/manifests --mo
 
 OPTIONS="$OPTIONS --certname=puppet --logdest=console"
 
-/usr/sbin/puppetmasterd --no-daemonize $OPTIONS $*
+/usr/bin/env puppetmasterd --no-daemonize $OPTIONS $*

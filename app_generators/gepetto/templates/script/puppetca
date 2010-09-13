@@ -1,3 +1,2 @@
 #!/bin/sh
-
-/usr/sbin/puppetca --ssldir $PWD/tmp/ssl $*
+/usr/bin/env puppetca --ssldir $PWD/tmp/ssl $*
