@@ -1,2 +1,13 @@
 #!/bin/sh
-/usr/bin/env puppetca --ssldir $PWD/tmp/ssl $*
+
+# create tmp if needed, other directories are created by puppetmasterd
+[ -d tmp ] || mkdir tmp
+
+# change working directories
+OPTIONS="--logdir=$PWD/log --vardir=$PWD/tmp/lib --rundir=$PWD/tmp/run --ssldir=$PWD/tmp/ssl"
+# use local files
+OPTIONS="$OPTIONS --templatedir=$PWD/templates --manifestdir=$PWD/manifests --modulepath=$PWD/modules --confdir=$PWD/config"
+
+OPTIONS="$OPTIONS --certname=puppet"
+
+/usr/bin/env puppetca --ssldir $PWD/tmp/ssl $OPTIONS $*
