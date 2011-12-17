@@ -37,7 +37,7 @@ case $command in
 
         module_url=$1
         [  -z "$module_url" ] && usage
-            
+
         shift
 
         if [ $# -gt 0 ]; then
@@ -50,14 +50,14 @@ case $command in
             # remove puppet- or module- prefix
             module_name=`echo $module_name | sed -e 's/^puppet-//' -e 's/^module-//'`
         fi
-            
+
         if [ -d $module_name ]; then
             echo "module $module_name already installed"
             exit 1
         fi
 
         echo "install module $module_name in $modules_dir/$module_name"
-        
+
         git clone $module_url $module_name
         rm -rf $module_name/.git
         ;;

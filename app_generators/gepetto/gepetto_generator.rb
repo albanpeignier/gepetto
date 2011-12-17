@@ -11,7 +11,7 @@ class GepettoGenerator < RubiGen::Base
 
   def manifest
     script_options = { :chmod => 0755 }
-    
+
     record do |m|
       # Root directory and all subdirectories.
       m.directory ''

@@ -65,8 +65,8 @@ class Sandbox < Rake::TaskLib
   end
 
   def sync_architecture
-    if self.bootstraper and self.architecture 
-      self.bootstraper.architecture = self.architecture 
+    if self.bootstraper and self.architecture
+      self.bootstraper.architecture = self.architecture
     end
   end
 
@@ -74,7 +74,7 @@ class Sandbox < Rake::TaskLib
     case self.architecture
     when 'i386'
       '686'
-    else 
+    else
       self.architecture
     end
   end
@@ -98,24 +98,24 @@ class Sandbox < Rake::TaskLib
           sh "echo '63,,L,*' | /sbin/sfdisk --force --no-reread -uS -H16 -S63 #{disk_image}"
         end
 
-        task :fs do 
+        task :fs do
           # format the filesystem
           begin
             sudo "losetup -o #{fs_offset} /dev/loop0 #{disk_image}"
-            
+
             # because '/sbin/sfdisk -s /dev/loop0' returns a wrong value :
             linux_partition_info = `/sbin/sfdisk -l #{disk_image}`.scan(%r{#{disk_image}.*Linux}).first
             extract_fs_block_size = linux_partition_info.split[5].to_i
-            
+
             sudo "/sbin/mke2fs -jqF /dev/loop0 #{extract_fs_block_size}"
           ensure
             sudo "losetup -d /dev/loop0"
           end
         end
-        
+
         task :system do
           # install a debian base system
-          mount do 
+          mount do
             bootstraper.bootstrap mount_point
           end
         end
@@ -128,7 +128,7 @@ class Sandbox < Rake::TaskLib
               case self.bootstraper.version
               when 'etch', 'lenny'
                 "linux-image-2.6-#{kernel_architecture}"
-              when 'hardy'    
+              when 'hardy'
                 'linux-image-2.6.24-16-generic'
               when 'intrepid'
                 'linux-image-generic'
@@ -176,8 +176,8 @@ class Sandbox < Rake::TaskLib
 
         task :config do
           Tempfile.open('sandbox_puppet_file') do |sandbox_puppet_file|
-            sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"            
-            sandbox_puppet_file.puts "$sandbox_ip='#{ip_address}'"            
+            sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"
+            sandbox_puppet_file.puts "$sandbox_ip='#{ip_address}'"
             sandbox_puppet_file.puts IO.read(puppet_file(:sandbox))
 
             sandbox_puppet_file.close
@@ -220,7 +220,7 @@ class Sandbox < Rake::TaskLib
         start :hda => disk_image(:initial), :snapshot => true
       end
 
-      task :wait do 
+      task :wait do
         wait
       end
 
@@ -264,7 +264,7 @@ class Sandbox < Rake::TaskLib
           sh "./script/puppetca --sign #{hostname}"
         end
 
-        task :clean do 
+        task :clean do
           # remove pending request
           sh "rm -f ssl/ca/requests/#{hostname}*.pem"
           # remove signed certificat
@@ -291,8 +291,8 @@ class Sandbox < Rake::TaskLib
       }.update(options)
     end
 
-    options_as_string = options.collect do |name,value| 
-      argument = "-#{name}"  
+    options_as_string = options.collect do |name,value|
+      argument = "-#{name}"
 
       case value
       when Array
@@ -308,7 +308,7 @@ class Sandbox < Rake::TaskLib
       end
     end.compact.join(' ')
 
-    qemu_command = 
+    qemu_command =
       case PLATFORM
       when /x86_64/
         "qemu-system-x86_64"
@@ -350,7 +350,7 @@ class Sandbox < Rake::TaskLib
   def mount_image
     sudo "mkdir #{mount_point}" unless File.exists? mount_point
     sudo "mount -o loop,offset=#{fs_offset} #{disk_image} #{mount_point}"
-    
+
     sudo "mount proc #{mount_point}/proc -t proc" if File.exists? "#{mount_point}/proc"
   end
 
@@ -364,7 +364,7 @@ class Sandbox < Rake::TaskLib
 
   def disk_image(suffix = nil)
     suffix = "-#{suffix}" if suffix
-    File.join Sandbox.images_directory, "#{name}#{suffix}.img"    
+    File.join Sandbox.images_directory, "#{name}#{suffix}.img"
   end
 
   def fs_offset
@@ -421,7 +421,7 @@ class DebianBoostraper
 
   def options
     {
-      :arch => architecture,  
+      :arch => architecture,
       :exclude => @exclude,
       :include => @include,
       :components => @components
