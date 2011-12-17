@@ -36,7 +36,7 @@ Create a new puppet project
 
   gepetto /path/to/new/puppet/project
 
-      create  
+      create
       create  script
       create  config
       create  manifests
@@ -87,10 +87,10 @@ Request a puppet run in sandbox:
 
 Install an external module:
 
-  ./script/module install git://git.black.co.at/module-common  
+  ./script/module install git://git.black.co.at/module-common
 
   install module common in modules/common
- 
+
   Initialized empty Git repository in modules/common/.git/
   remote: Counting objects: 322, done.
   remote: Compressing objects: 100% (217/217), done.
@@ -102,7 +102,7 @@ Create a new Puppet module
 
   ./script/generate module private
 
-      create  
+      create
       create  manifests
       create  files
       create  templates
@@ -145,7 +145,7 @@ Start a qemu instance with the sandbox image:
 Follow the console (and syslog) output of the sandbox:
 
   tail -f log/sandbox.log
- 
+
   [...]
   Starting puppet configuration management tool
 
@@ -157,7 +157,7 @@ Follow the console (and syslog) output of the sandbox:
 
 
 Sign the new sandbox certificat:
-            
+
   rake sandbox:puppet:sign
 
 Request a puppet run in the sandbox:

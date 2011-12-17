@@ -2,11 +2,11 @@ Exec { path => "/usr/bin:/usr/sbin/:/bin:/sbin" }
 
 # install qemu
 
-package { qemu: 
+package { qemu:
   ensure => "latest"
 }
 
-# compile kqemu module 
+# compile kqemu module
 
 package { kqemu-source:
   ensure => "latest",
@@ -21,7 +21,7 @@ if $operatingsystem == Debian {
     unless => 'dpkg -l "kqemu-modules-`uname -r`" | grep ^ii' ,
     require => Package[kqemu-source]
   }
-  
+
   exec { "add kqemu in /etc/modules":
     command => "echo kqemu >> /etc/modules",
     unless => "grep kqemu /etc/modules",
@@ -41,7 +41,7 @@ file { "/dev/kqemu":
   require => Exec["modprobe-kqemu"]
 }
 
-# install uml-utilities for tunctl 
+# install uml-utilities for tunctl
 
 package { uml-utilities: }
 
