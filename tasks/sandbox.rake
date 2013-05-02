@@ -49,7 +49,7 @@ class Sandbox < Rake::TaskLib
     @disk_size ||= '512M'
     @memory_size ||= '128M'
 
-    @mount_point ||= "/mnt/#{name}"
+    @mount_point ||= File.join(Sandbox.images_directory, name)
     @tap_device ||= 'tap0'
   end
 
@@ -172,7 +172,7 @@ class Sandbox < Rake::TaskLib
 
         def boot_device
           # TODO find boot device by a less stupid way
-          self.bootstraper.version == "squeeze" ? "/dev/sda1" : "/dev/hda1"
+          self.bootstraper.version != "lenny" ? "/dev/sda1" : "/dev/hda1"
         end
 
         task :ssh do
