@@ -1,0 +1,22 @@
+PATH
+  remote: .
+  specs:
+    gepetto (0.0.13)
+      rake
+      rubigen
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    activesupport (3.0.3)
+    i18n (0.5.0)
+    rake (0.8.7)
+    rubigen (1.5.6)
+      activesupport (>= 2.3.5)
+      i18n
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  gepetto!

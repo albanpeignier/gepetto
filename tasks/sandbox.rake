@@ -28,7 +28,7 @@ class Sandbox < Rake::TaskLib
   end
 
   attr_reader :name
-  attr_accessor :bootstraper, :ip_address, :host_ip_address, :tap_device
+  attr_accessor :bootstraper, :host_ip_address, :tap_device
   attr_accessor :disk_size, :memory_size, :mount_point
   attr_accessor :architecture
 
@@ -44,8 +44,7 @@ class Sandbox < Rake::TaskLib
     @architecture = Sandbox.default_architecture
     bootstraper = DebianBoostraper.new
 
-    @ip_address ||= '172.20.0.2'
-    @host_ip_address ||= @ip_address.gsub(/\.[0-9]+$/,'.1')
+    @host_ip_address ||= '10.0.3.1'
 
     @disk_size ||= '512M'
     @memory_size ||= '128M'
@@ -100,16 +99,13 @@ class Sandbox < Rake::TaskLib
 
         task :fs do 
           # format the filesystem
-          begin
-            sudo "losetup -o #{fs_offset} /dev/loop0 #{disk_image}"
-            
-            # because '/sbin/sfdisk -s /dev/loop0' returns a wrong value :
+          with_loop_device do |loop_device|
+            # because '/sbin/sfdisk -s /dev/loopX' returns a wrong value :
             linux_partition_info = `/sbin/sfdisk -l #{disk_image}`.scan(%r{#{disk_image}.*Linux}).first
             extract_fs_block_size = linux_partition_info.split[5].to_i
             
-            sudo "/sbin/mke2fs -jqF /dev/loop0 #{extract_fs_block_size}"
-          ensure
-            sudo "losetup -d /dev/loop0"
+            #  #{extract_fs_block_size}
+            sudo "/sbin/mke2fs -jqF -L root #{loop_device}"
           end
         end
         
@@ -117,6 +113,15 @@ class Sandbox < Rake::TaskLib
           # install a debian base system
           mount do 
             bootstraper.bootstrap mount_point
+
+            # Facter package fails to be configured by debootstrap under squeeze
+            apt_get_install "puppet"
+
+            begin
+              apt_get_install "extlinux"
+            rescue
+              apt_get_install "syslinux"
+            end
           end
         end
 
@@ -126,15 +131,15 @@ class Sandbox < Rake::TaskLib
 
             kernel_package =
               case self.bootstraper.version
-              when 'etch', 'lenny'
-                "linux-image-2.6-#{kernel_architecture}"
               when 'hardy'    
                 'linux-image-2.6.24-16-generic'
               when 'intrepid'
                 'linux-image-generic'
+              else
+                "linux-image-2.6-#{kernel_architecture}"
               end
 
-            chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes #{kernel_package}"
+            apt_get_install kernel_package
           end
         end
 
@@ -148,14 +153,26 @@ class Sandbox < Rake::TaskLib
               f.puts "LABEL linux"
               f.puts "SAY Now booting sandbox from syslinux ..."
               f.puts "KERNEL /vmlinuz"
-              f.puts "APPEND ro root=/dev/hda1 initrd=/initrd.img"
+              f.puts "APPEND ro root=#{boot_device} initrd=/initrd.img"
               f.close
               sudo "cp #{f.path} #{extlinux_dir}/extlinux.conf"
             end
 
-            sudo "extlinux --install -H16 -S63 #{mount_point}/boot/extlinux"
+            if bootstraper.version == "wheezy"
+              sudo "dd if=#{mount_point}/usr/lib/extlinux/mbr.bin of=#{disk_image} bs=440 count=1 conv=notrunc"
+            end
+
+            chroot_sh "extlinux --install -H16 -S63 /boot/extlinux"
           end
-          sudo "dd if=/usr/lib/syslinux/mbr.bin of=#{disk_image} conv=notrunc"
+
+          unless bootstraper.version == "wheezy"
+            sudo "dd if=/usr/lib/syslinux/mbr.bin of=#{disk_image} conv=notrunc"
+          end
+        end
+
+        def boot_device
+          # TODO find boot device by a less stupid way
+          self.bootstraper.version == "squeeze" ? "/dev/sda1" : "/dev/hda1"
         end
 
         task :ssh do
@@ -177,7 +194,7 @@ class Sandbox < Rake::TaskLib
         task :config do
           Tempfile.open('sandbox_puppet_file') do |sandbox_puppet_file|
             sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"            
-            sandbox_puppet_file.puts "$sandbox_ip='#{ip_address}'"            
+            sandbox_puppet_file.puts "$sandbox_name='#{@name}'"            
             sandbox_puppet_file.puts IO.read(puppet_file(:sandbox))
 
             sandbox_puppet_file.close
@@ -185,7 +202,18 @@ class Sandbox < Rake::TaskLib
             # finalize configuration with puppet
             mount do
               sudo "cp #{sandbox_puppet_file.path} #{mount_point}/etc/sandbox.pp"
-              sudo "chroot #{mount_point} puppet /etc/sandbox.pp"
+
+              Tempfile.open('policy-rc.d') do |f|
+                f.puts "exit 101"
+                sudo "cp #{f.path} #{mount_point}/usr/sbin/policy-rc.d"
+              end
+              sudo "chmod +x #{mount_point}/usr/sbin/policy-rc.d"
+
+              begin
+                sudo "chroot #{mount_point} puppet /etc/sandbox.pp"
+              ensure
+                sudo "rm #{mount_point}/usr/sbin/policy-rc.d"
+              end
             end
           end
         end
@@ -235,7 +263,7 @@ class Sandbox < Rake::TaskLib
       end
 
       task :mount do
-        mount_image
+        mount_image ENV['LOOP_DEVICE']
       end
 
       task :umount do
@@ -245,7 +273,7 @@ class Sandbox < Rake::TaskLib
       task :clean => 'puppet:clean' do
         # clean known_hosts
         known_hosts_file="#{ENV['HOME']}/.ssh/known_hosts"
-        sh "sed -i -e '/#{hostname} / d'  -e '/#{ip_address} / d' #{known_hosts_file}" if File.exists?(known_hosts_file)
+        sh "sed -i -e '/#{hostname} / d'  #{known_hosts_file}" if File.exists?(known_hosts_file)
       end
 
       task :status do
@@ -274,6 +302,15 @@ class Sandbox < Rake::TaskLib
     end
   end
 
+  def network_interface
+    vde_ctl_devices = Dir["/var/run/vde2/*.ctl"]
+    unless vde_ctl_devices.empty?
+      "vde,sock=#{vde_ctl_devices.first}"
+    else
+      "tap,ifname=#{tap_device},script=config/qemu-ifup"
+    end
+  end
+
   def start(options = {})
     options = {
       :daemonize => true,
@@ -282,7 +319,7 @@ class Sandbox < Rake::TaskLib
       :nographic => false,
       :"enable-kvm" => true,
       :m => memory_size,
-      :net => ["nic", "tap,ifname=#{tap_device},script=config/qemu-ifup"]
+      :net => ["nic", network_interface]
     }.update(options)
 
     if options[:daemonize]
@@ -316,6 +353,7 @@ class Sandbox < Rake::TaskLib
         "qemu"
       end
 
+    puts "#{qemu_command} #{options_as_string}" if ENV['VERBOSE']
     sh "#{qemu_command} #{options_as_string}"
   end
 
@@ -328,7 +366,7 @@ class Sandbox < Rake::TaskLib
     try_timeout = timeout / try_count
 
     5.times do
-      if Ping.pingecho(ip_address, try_timeout)
+      if Ping.pingecho(@name, try_timeout)
         return
       else
         sleep try_timeout
@@ -338,26 +376,55 @@ class Sandbox < Rake::TaskLib
     raise "no response from #{hostname} after #{timeout} seconds"
   end
 
-  def mount(&block)
+  def try(retries = 2, &block)
     begin
-      mount_image
-      yield mount_point
-    ensure
-      umount_image
+      yield
+    rescue
+      if (retries -= 1) > 0
+        sleep 3
+        retry 
+      end
     end
   end
 
-  def mount_image
+  def with_loop_device(&block)
+    loop_device = `sudo losetup -f`.strip
+    begin
+      sudo "losetup -o #{fs_offset} #{loop_device} #{disk_image}"
+      yield loop_device
+    ensure
+      sudo "losetup -d #{loop_device}"
+    end
+  end
+
+  def mount(&block)
+    with_loop_device do |loop_device|
+      begin
+        mount_image loop_device
+        yield mount_point
+      ensure
+        try { umount_image }
+      end
+    end
+  end
+
+  attr_reader :loop_device
+
+  def mount_image(loop_device = nil)
     sudo "mkdir #{mount_point}" unless File.exists? mount_point
-    sudo "mount -o loop,offset=#{fs_offset} #{disk_image} #{mount_point}"
-    
+
+    unless loop_device
+      sudo "mount -o loop,offset=#{fs_offset} #{disk_image} #{mount_point}"
+    else
+      sudo "mount #{loop_device} #{mount_point}"
+    end
+
     sudo "mount proc #{mount_point}/proc -t proc" if File.exists? "#{mount_point}/proc"
   end
 
   def umount_image
-    [ "#{mount_point}/proc", mount_point ].each do |mount|
-      sudo "umount #{mount} || true"
-    end
+    sudo "umount #{mount_point}/proc || true"
+    sudo "umount #{mount_point}"
   end
 
   # TODO to be customizable
@@ -392,6 +459,11 @@ class Sandbox < Rake::TaskLib
     sudo "chroot #{mount_point} sh -c \"#{cmd}\""
   end
 
+  def apt_get_install(*packages)
+    puts "install #{packages.inspect}"
+    chroot_sh "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes #{packages.join(' ')}"
+  end
+
 end
 
 class DebianBoostraper
@@ -399,8 +471,8 @@ class DebianBoostraper
   attr_accessor :version, :mirror, :include, :exclude, :architecture
 
   def initialize(&block)
-    @include = %w{puppet ssh udev resolvconf syslinux debian-archive-keyring}
-    @exclude = %w{at exim mailx libstdc++2.10-glibc2.2 mbr setserial fdutils info ipchains iptables lilo pcmcia-cs ppp pppoe pppoeconf pppconfig telnet exim4 exim4-base exim4-config exim4-daemon-light pciutils modconf tasksel console-common console-tools console-data base-config man-db manpages}
+    @include = %w{rsyslog cron}
+    @exclude = %w{exim exim exim4 exim4-base exim4-config exim4-daemon-light}
 
     default_attributes
 
@@ -415,7 +487,7 @@ class DebianBoostraper
   end
 
   def bootstrap(root)
-    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}"}.join(' ')
+    options_as_string = options.collect{|k,v| "--#{k} #{Array(v).join(',')}" unless v.nil? or v.empty? }.compact.join(' ')
     sudo "debootstrap --variant=minbase #{options_as_string} #{version} #{root} #{mirror}"
   end
 

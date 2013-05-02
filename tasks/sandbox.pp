@@ -2,12 +2,12 @@
 
 # These variables are defined by rake task
 #$host_ip='172.20.0.1'
-#$sandbox_ip='172.20.0.2'
+#$sandbox_name='sandbox'
 
 Exec { path => "/usr/bin:/usr/sbin/:/bin:/sbin" }
 
 file { "/etc/fstab":
-  content => "/dev/hda1 / ext3 errors=remount-ro 0 1
+  content => "LABEL=root / ext3 errors=remount-ro 0 1
 proc /proc proc defaults 0 0
 "
 }
@@ -25,7 +25,7 @@ exec { "inittab-no-tty-gettys":
 }
 
 file { ["/etc/hostname", "/etc/mailname"]:
-  content => "sandbox"
+  content => "$sandbox_name"
 }
 
 file {  "/etc/default/locale":
@@ -35,7 +35,7 @@ file {  "/etc/default/locale":
 # an host object doesn't find a provider
 file { "/etc/hosts":
   content => "127.0.0.1 localhost
-127.0.1.1 sandbox
+127.0.1.1 $sandbox_name
 $host_ip	puppet
 "
 }
@@ -59,30 +59,30 @@ file { "/etc/network/interfaces":
 iface lo inet loopback
 
 auto eth0
-iface eth0 inet static
-        address $sandbox_ip
-        netmask 255.255.255.0
-        gateway $host_ip
-        dns-nameservers $host_ip
-"
+iface eth0 inet dhcp
+",
+  require => Package[dhcp3-client]
+}
+
+package { dhcp3-client: }
+
+exec { "add-dhcp-host-name":
+  command => "echo 'send host-name \"hyppo\";' >> /etc/dhcp3/dhclient.conf",
+  require => Package[dhcp3-client]
 }
 
 # puppet configuration
 
 file { "/etc/default/puppet":
-  content => 'START=no
-DAEMON_OPTS="-w 5"
-'
+  content => "START=yes\nDAEMON_OPTS='-w 5\n'"
 }
 
 file { "/etc/puppet/namespaceauth.conf":
-  content => "[puppetrunner]
-  allow $host_ip
-"
+  content => "[puppetrunner]\nallow $host_ip\n"
 }
 
 file { "/etc/puppet/puppet.conf":
-  content => '[main]
+  content => "[main]
 logdir=/var/log/puppet
 vardir=/var/lib/puppet
 ssldir=/var/lib/puppet/ssl
@@ -92,15 +92,18 @@ pluginsync=false
 color=false
 
 [puppetd]
-certname=sandbox
+certname=$sandbox_name
 report=true
 # run puppetd .. every day
 runinterval = 86400
 listen=true
-'
+"
 }
 
 exec { "syslog-to-ttyS0":
   command => "echo '*.*		-/dev/ttyS0' >> /etc/rsyslog.conf",
   unless => 'grep /dev/ttyS0 /etc/rsyslog.conf'
 }
+
+package { [ssh,nano,udev,resolvconf,debian-archive-keyring,lsb-release]: }
+
