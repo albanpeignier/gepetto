@@ -81,6 +81,10 @@ file { "/etc/puppet/namespaceauth.conf":
   content => "[puppetrunner]\nallow $host_ip\n"
 }
 
+file { "/etc/puppet/auth.conf":
+  ensure => present
+}
+
 file { "/etc/puppet/puppet.conf":
   content => "[main]
 logdir=/var/log/puppet
