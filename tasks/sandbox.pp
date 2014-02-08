@@ -66,11 +66,6 @@ iface eth0 inet dhcp
 
 package { dhcp3-client: }
 
-exec { "add-dhcp-host-name":
-  command => "echo 'send host-name \"hyppo\";' >> /etc/dhcp3/dhclient.conf",
-  require => Package[dhcp3-client]
-}
-
 # puppet configuration
 
 file { "/etc/default/puppet":
@@ -110,4 +105,3 @@ exec { "syslog-to-ttyS0":
 }
 
 package { [ssh,nano,udev,resolvconf,debian-archive-keyring,lsb-release]: }
-
