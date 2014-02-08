@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     gepetto (0.0.13)
+      net-ping
       rake
       rubigen
 
@@ -10,8 +11,9 @@ GEM
   specs:
     activesupport (3.1.12)
       multi_json (~> 1.0)
-    multi_json (1.8.0)
-    rake (10.1.0)
+    multi_json (1.8.4)
+    net-ping (1.7.2)
+    rake (10.1.1)
     rubigen (1.5.8)
       activesupport (>= 2.3.5, < 3.2.0)
 

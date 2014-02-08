@@ -23,4 +23,5 @@ More information about Puppet: http://reductivelabs.com/trac/puppet/}
 
   s.add_dependency "rubigen"
   s.add_dependency "rake"
+  s.add_dependency "net-ping"
 end
