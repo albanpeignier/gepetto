@@ -1,11 +1,12 @@
+# coding: utf-8
 require 'rake/tasklib'
-require 'ping'
+require 'net/ping'
 require 'tempfile'
 
 class Sandbox < Rake::TaskLib
 
   def self.default_architecture
-    case PLATFORM
+    case RUBY_PLATFORM
     when /x86_64/
       "amd64"
     else
@@ -64,8 +65,8 @@ class Sandbox < Rake::TaskLib
   end
 
   def sync_architecture
-    if self.bootstraper and self.architecture 
-      self.bootstraper.architecture = self.architecture 
+    if self.bootstraper and self.architecture
+      self.bootstraper.architecture = self.architecture
     end
   end
 
@@ -73,7 +74,7 @@ class Sandbox < Rake::TaskLib
     case self.architecture
     when 'i386'
       '686'
-    else 
+    else
       self.architecture
     end
   end
@@ -97,21 +98,21 @@ class Sandbox < Rake::TaskLib
           sh "echo '63,,L,*' | /sbin/sfdisk --force --no-reread -uS -H16 -S63 #{disk_image}"
         end
 
-        task :fs do 
+        task :fs do
           # format the filesystem
           with_loop_device do |loop_device|
             # because '/sbin/sfdisk -s /dev/loopX' returns a wrong value :
             linux_partition_info = `/sbin/sfdisk -l #{disk_image}`.scan(%r{#{disk_image}.*Linux}).first
             extract_fs_block_size = linux_partition_info.split[5].to_i
-            
+
             #  #{extract_fs_block_size}
             sudo "/sbin/mke2fs -jqF -L root #{loop_device}"
           end
         end
-        
+
         task :system do
           # install a debian base system
-          mount do 
+          mount do
             bootstraper.bootstrap mount_point
 
             # Facter package fails to be configured by debootstrap under squeeze
@@ -131,7 +132,7 @@ class Sandbox < Rake::TaskLib
 
             kernel_package =
               case self.bootstraper.version
-              when 'hardy'    
+              when 'hardy'
                 'linux-image-2.6.24-16-generic'
               when 'intrepid'
                 'linux-image-generic'
@@ -193,8 +194,8 @@ class Sandbox < Rake::TaskLib
 
         task :config do
           Tempfile.open('sandbox_puppet_file') do |sandbox_puppet_file|
-            sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"            
-            sandbox_puppet_file.puts "$sandbox_name='#{@name}'"            
+            sandbox_puppet_file.puts "$host_ip='#{host_ip_address}'"
+            sandbox_puppet_file.puts "$sandbox_name='#{@name}'"
             sandbox_puppet_file.puts IO.read(puppet_file(:sandbox))
 
             sandbox_puppet_file.close
@@ -248,7 +249,7 @@ class Sandbox < Rake::TaskLib
         start :hda => disk_image(:initial), :snapshot => true
       end
 
-      task :wait do 
+      task :wait do
         wait
       end
 
@@ -292,7 +293,7 @@ class Sandbox < Rake::TaskLib
           sh "./script/puppetca --sign #{hostname}"
         end
 
-        task :clean do 
+        task :clean do
           # remove pending request
           sh "rm -f ssl/ca/requests/#{hostname}*.pem"
           # remove signed certificat
@@ -312,6 +313,9 @@ class Sandbox < Rake::TaskLib
   end
 
   def start(options = {})
+    # To make nested VMs :
+    # $ echo "options kvm-intel nested=1" | sudo tee /etc/modprobe.d/kvm-intel.conf
+
     options = {
       :daemonize => true,
       :snapshot => ENV['SNAPSHOT'],
@@ -333,8 +337,8 @@ class Sandbox < Rake::TaskLib
       options[:hdb] = disk_image(:storage)
     end
 
-    options_as_string = options.collect do |name,value| 
-      argument = "-#{name}"  
+    options_as_string = options.collect do |name,value|
+      argument = "-#{name}"
 
       case value
       when Array
@@ -350,8 +354,8 @@ class Sandbox < Rake::TaskLib
       end
     end.compact.join(' ')
 
-    qemu_command = 
-      case PLATFORM
+    qemu_command =
+      case RUBY_PLATFORM
       when /x86_64/
         "qemu-system-x86_64"
       else
@@ -387,7 +391,7 @@ class Sandbox < Rake::TaskLib
     rescue
       if (retries -= 1) > 0
         sleep 3
-        retry 
+        retry
       end
     end
   end
@@ -436,7 +440,7 @@ class Sandbox < Rake::TaskLib
 
   def disk_image(suffix = nil)
     suffix = "-#{suffix}" if suffix
-    File.join Sandbox.images_directory, "#{name}#{suffix}.img"    
+    File.join Sandbox.images_directory, "#{name}#{suffix}.img"
   end
 
   def fs_offset
@@ -498,7 +502,7 @@ class DebianBoostraper
 
   def options
     {
-      :arch => architecture,  
+      :arch => architecture,
       :exclude => @exclude,
       :include => @include,
       :components => @components
