@@ -319,6 +319,7 @@ class Sandbox < Rake::TaskLib
       :nographic => false,
       :"enable-kvm" => true,
       :m => memory_size,
+      :cpu => "qemu64,+vmx",
       :net => ["nic", network_interface]
     }.update(options)
 
@@ -326,6 +327,10 @@ class Sandbox < Rake::TaskLib
       options = {
         :pidfile => File.expand_path("tmp/run/#{name}.pid"), :serial => "file:" + File.expand_path("log/#{name}.log")
       }.update(options)
+    end
+
+    if File.exists? disk_image(:storage)
+      options[:hdb] = disk_image(:storage)
     end
 
     options_as_string = options.collect do |name,value| 

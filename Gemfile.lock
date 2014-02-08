@@ -6,14 +6,14 @@ PATH
       rubigen
 
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
-    activesupport (3.0.3)
-    i18n (0.5.0)
-    rake (0.8.7)
-    rubigen (1.5.6)
-      activesupport (>= 2.3.5)
-      i18n
+    activesupport (3.1.12)
+      multi_json (~> 1.0)
+    multi_json (1.8.0)
+    rake (10.1.0)
+    rubigen (1.5.8)
+      activesupport (>= 2.3.5, < 3.2.0)
 
 PLATFORMS
   ruby
