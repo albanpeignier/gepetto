@@ -12,18 +12,6 @@ proc /proc proc defaults 0 0
 "
 }
 
-# Console on ttyS0 not tty1
-exec { "inittab-ttyS0-getty":
-  command => "sed -i '/getty 38400 tty1/ s/tty1/ttyS0/' /etc/inittab",
-  unless => "grep 'getty 38400 ttyS0' /etc/inittab"
-}
-
-# and no other gettys
-exec { "inittab-no-tty-gettys":
-  command => "sed -i '/getty 38400 tty[23456]/ d' /etc/inittab",
-  onlyif => "grep 'getty 38400 tty[23456]' /etc/inittab"
-}
-
 file { ["/etc/hostname", "/etc/mailname"]:
   content => "$sandbox_name"
 }
