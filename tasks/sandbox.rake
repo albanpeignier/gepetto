@@ -95,7 +95,7 @@ class Sandbox < Rake::TaskLib
         task :image do
           sh "qemu-img create -f raw #{disk_image} #{disk_size}"
           # create the partition table
-          sh "echo '63,,L,*' | /sbin/sfdisk --force --no-reread -uS -H16 -S63 #{disk_image}"
+          sh "echo '63,,L,*' | /sbin/sfdisk --force --no-reread #{disk_image}"
         end
 
         task :fs do
